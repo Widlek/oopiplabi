@@ -1,0 +1,1008 @@
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <iomanip>
+#include <limits>
+#include <algorithm>
+#include <fstream>
+#include <sstream>
+#include <ctime>
+#include <cstdlib>
+
+using namespace std;
+
+// Базовый класс Employee
+class Employee {
+protected:
+    string name;
+    int id;
+    string position;
+    double salary;
+
+    template<typename T>
+    void safeInput(T& value, const string& prompt) {
+        while (true) {
+            cout << prompt;
+            cin >> value;
+            if (cin.good()) {
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                break;
+            } else {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Ошибка ввода. Пожалуйста, попробуйте снова.\n";
+            }
+        }
+    }
+
+public:
+    Employee() : id(0), salary(0.0) {}
+    virtual ~Employee() = default;
+
+    virtual void display() const {
+        cout << "Имя: " << name
+             << ", ID: " << id
+             << ", Должность: " << position
+             << ", Зарплата: " << salary << endl;
+    }
+
+    virtual void input() {
+        cout << "Введите имя сотрудника: ";
+        getline(cin, name);
+
+        safeInput(id, "Введите ID сотрудника: ");
+        
+        cout << "Введите должность сотрудника: ";
+        getline(cin, position);
+        
+        safeInput(salary, "Введите зарплату сотрудника: ");
+    }
+
+    virtual void edit() {
+        cout << "Редактирование сотрудника (оставьте пустым, чтобы не изменять):\n";
+        
+        string newName;
+        cout << "Новое имя: ";
+        getline(cin, newName);
+        if (!newName.empty()) name = newName;
+        
+        string newId;
+        cout << "Новый ID: ";
+        getline(cin, newId);
+        if (!newId.empty()) id = stoi(newId);
+        
+        string newPosition;
+        cout << "Новая должность: ";
+        getline(cin, newPosition);
+        if (!newPosition.empty()) position = newPosition;
+        
+        string newSalary;
+        cout << "Новая зарплата: ";
+        getline(cin, newSalary);
+        if (!newSalary.empty()) salary = stod(newSalary);
+    }
+
+    // Перегрузка оператора вывода
+    friend ostream& operator<<(ostream& os, const Employee& emp) {
+        os << emp.name << "|" << emp.id << "|" << emp.position << "|" << emp.salary;
+        return os;
+    }
+
+    // Перегрузка оператора ввода
+    friend istream& operator>>(istream& is, Employee& emp) {
+        string line;
+        if (getline(is, line)) {
+            stringstream ss(line);
+            getline(ss, emp.name, '|');
+            string idStr, salaryStr;
+            getline(ss, idStr, '|');
+            getline(ss, emp.position, '|');
+            getline(ss, salaryStr, '|');
+            
+            emp.id = stoi(idStr);
+            emp.salary = stod(salaryStr);
+        }
+        return is;
+    }
+
+    string getName() const { return name; }
+    int getId() const { return id; }
+    string getPosition() const { return position; }
+    double getSalary() const { return salary; }
+
+    void setName(const string& newName) { name = newName; }
+    void setId(int newId) { id = newId; }
+    void setPosition(const string& newPosition) { position = newPosition; }
+    void setSalary(double newSalary) { salary = newSalary; }
+};
+
+// Класс Developer
+class Developer : public Employee {
+private:
+    string programmingLanguage;
+    string level;
+
+public:
+    Developer() : Employee() {
+        position = "Developer";
+    }
+
+    void input() override {
+        Employee::input();
+        
+        cout << "Введите основной язык программирования: ";
+        getline(cin, programmingLanguage);
+        
+        int levelChoice;
+        cout << "Выберите уровень разработчика:\n";
+        cout << "1 - Junior\n";
+        cout << "2 - Middle\n";
+        cout << "3 - Senior\n";
+        cout << "Ваш выбор: ";
+        
+        while (true) {
+            cin >> levelChoice;
+            if (cin.good() && levelChoice >= 1 && levelChoice <= 3) {
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                break;
+            } else {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Неверный выбор. Пожалуйста, введите цифру от 1 до 3: ";
+            }
+        }
+        
+        switch (levelChoice) {
+            case 1: level = "Junior"; break;
+            case 2: level = "Middle"; break;
+            case 3: level = "Senior"; break;
+        }
+    }
+
+    void display() const override {
+        cout << "Разработчик: " << name 
+             << " (ID: " << id 
+             << ", Уровень: " << level
+             << ", Язык: " << programmingLanguage
+             << ", Зарплата: " << salary << ")" << endl;
+    }
+
+    void edit() override {
+        Employee::edit();
+        
+        string newLang;
+        cout << "Новый язык программирования: ";
+        getline(cin, newLang);
+        if (!newLang.empty()) programmingLanguage = newLang;
+        
+        string newLevel;
+        cout << "Новый уровень (Junior/Middle/Senior): ";
+        getline(cin, newLevel);
+        if (!newLevel.empty()) level = newLevel;
+    }
+
+    // Перегрузка оператора вывода
+    friend ostream& operator<<(ostream& os, const Developer& dev) {
+        os << dynamic_cast<const Employee&>(dev) << "|" << dev.programmingLanguage << "|" << dev.level;
+        return os;
+    }
+
+    // Перегрузка оператора ввода
+    friend istream& operator>>(istream& is, Developer& dev) {
+        is >> dynamic_cast<Employee&>(dev);
+        string line;
+        if (getline(is, line)) {
+            stringstream ss(line);
+            getline(ss, dev.programmingLanguage, '|');
+            getline(ss, dev.level, '|');
+        }
+        return is;
+    }
+
+    string getProgrammingLanguage() const { return programmingLanguage; }
+    string getLevel() const { return level; }
+
+    void setProgrammingLanguage(const string& lang) { programmingLanguage = lang; }
+    void setLevel(const string& lvl) { level = lvl; }
+};
+
+// Класс Manager
+class Manager : public Employee {
+private:
+    int completedProjects;
+    string methodology;
+
+public:
+    Manager() : Employee() {
+        position = "Project Manager";
+        completedProjects = 0;
+    }
+
+    void input() override {
+        Employee::input();
+        
+        safeInput(completedProjects, "Введите количество успешно завершенных проектов: ");
+        
+        int methodologyChoice;
+        cout << "Выберите методиологию управления:\n";
+        cout << "1 - Agile\n";
+        cout << "2 - Waterfall\n";
+        cout << "3 - Scrum\n";
+        cout << "4 - Kanban\n";
+        cout << "5 - Другая\n";
+        cout << "Ваш выбор: ";
+        
+        while (true) {
+            cin >> methodologyChoice;
+            if (cin.good() && methodologyChoice >= 1 && methodologyChoice <= 5) {
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                break;
+            } else {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Неверный выбор. Пожалуйста, введите цифру от 1 до 5: ";
+            }
+        }
+        
+        switch (methodologyChoice) {
+            case 1: methodology = "Agile"; break;
+            case 2: methodology = "Waterfall"; break;
+            case 3: methodology = "Scrum"; break;
+            case 4: methodology = "Kanban"; break;
+            case 5: 
+                cout << "Введите название вашей методиологии: ";
+                getline(cin, methodology);
+                break;
+        }
+    }
+
+    void display() const override {
+        cout << "Менеджер проектов: " << name 
+             << " (ID: " << id 
+             << ", Завершенные проекты: " << completedProjects
+             << ", Методиология: " << methodology
+             << ", Зарплата: " << salary << ")" << endl;
+    }
+
+    void edit() override {
+        Employee::edit();
+        
+        string newProjects;
+        cout << "Новое количество завершенных проектов: ";
+        getline(cin, newProjects);
+        if (!newProjects.empty()) completedProjects = stoi(newProjects);
+        
+        string newMethodology;
+        cout << "Новая методиология: ";
+        getline(cin, newMethodology);
+        if (!newMethodology.empty()) methodology = newMethodology;
+    }
+
+    // Перегрузка оператора вывода
+    friend ostream& operator<<(ostream& os, const Manager& man) {
+        os << dynamic_cast<const Employee&>(man) << "|" << man.completedProjects << "|" << man.methodology;
+        return os;
+    }
+
+    // Перегрузка оператора ввода
+    friend istream& operator>>(istream& is, Manager& man) {
+        is >> dynamic_cast<Employee&>(man);
+        string line;
+        if (getline(is, line)) {
+            stringstream ss(line);
+            string projectsStr;
+            getline(ss, projectsStr, '|');
+            getline(ss, man.methodology, '|');
+            man.completedProjects = stoi(projectsStr);
+        }
+        return is;
+    }
+
+    int getCompletedProjects() const { return completedProjects; }
+    string getMethodology() const { return methodology; }
+
+    void setCompletedProjects(int projects) { completedProjects = projects; }
+    void setMethodology(const string& method) { methodology = method; }
+};
+
+// Класс Team
+class Team {
+private:
+    string teamName;
+    vector<shared_ptr<Employee>> members;
+
+public:
+    Team(const string& name = "") : teamName(name) {}
+    ~Team() = default;
+
+    void addMember(shared_ptr<Employee> employee) {
+        if (find(members.begin(), members.end(), employee) == members.end()) {
+            members.push_back(employee);
+        }
+    }
+
+    bool removeMember(shared_ptr<Employee> employee) {
+        auto it = find(members.begin(), members.end(), employee);
+        if (it != members.end()) {
+            members.erase(it);
+            return true;
+        }
+        return false;
+    }
+
+    bool removeMember(int id) {
+        auto it = find_if(members.begin(), members.end(),
+            [id](const shared_ptr<Employee>& emp) {
+                return emp->getId() == id;
+            });
+        
+        if (it != members.end()) {
+            members.erase(it);
+            return true;
+        }
+        return false;
+    }
+
+    shared_ptr<Employee> findMember(int id) const {
+        auto it = find_if(members.begin(), members.end(),
+            [id](const shared_ptr<Employee>& emp) {
+                return emp->getId() == id;
+            });
+        
+        return (it != members.end()) ? *it : nullptr;
+    }
+
+    bool contains(shared_ptr<Employee> employee) const {
+        return find(members.begin(), members.end(), employee) != members.end();
+    }
+
+    void displayAllMembers() const {
+        cout << "\n--- Состав команды '" << teamName << "' ---\n";
+        if (members.empty()) {
+            cout << "Команда пуста.\n";
+            return;
+        }
+        
+        for (const auto& member : members) {
+            member->display();
+        }
+        cout << "--------------------------------\n";
+    }
+
+    void sortByName() {
+        sort(members.begin(), members.end(),
+            [](const shared_ptr<Employee>& a, const shared_ptr<Employee>& b) {
+                return a->getName() < b->getName();
+            });
+    }
+
+    void sortBySalary() {
+        sort(members.begin(), members.end(),
+            [](const shared_ptr<Employee>& a, const shared_ptr<Employee>& b) {
+                return a->getSalary() < b->getSalary();
+            });
+    }
+
+    void sortById() {
+        sort(members.begin(), members.end(),
+            [](const shared_ptr<Employee>& a, const shared_ptr<Employee>& b) {
+                return a->getId() < b->getId();
+            });
+    }
+
+    vector<shared_ptr<Employee>> findByPosition(const string& position) const {
+        vector<shared_ptr<Employee>> result;
+        copy_if(members.begin(), members.end(), back_inserter(result),
+            [&position](const shared_ptr<Employee>& emp) {
+                return emp->getPosition() == position;
+            });
+        return result;
+    }
+
+    // Перегрузка оператора вывода
+    friend ostream& operator<<(ostream& os, const Team& team) {
+        os << team.teamName << "|" << team.members.size();
+        for (const auto& member : team.members) {
+            os << "|" << member->getId();
+        }
+        return os;
+    }
+
+    // Перегрузка оператора ввода
+    friend istream& operator>>(istream& is, Team& team) {
+        string line;
+        if (getline(is, line)) {
+            stringstream ss(line);
+            getline(ss, team.teamName, '|');
+            
+            string sizeStr;
+            getline(ss, sizeStr, '|');
+            size_t size = stoul(sizeStr);
+            
+            team.members.clear();
+            for (size_t i = 0; i < size; i++) {
+                string idStr;
+                getline(ss, idStr, '|');
+                // ID будут связаны позже при загрузке
+            }
+        }
+        return is;
+    }
+
+    string getTeamName() const { return teamName; }
+    void setTeamName(const string& name) { teamName = name; }
+    size_t getSize() const { return members.size(); }
+    bool isEmpty() const { return members.empty(); }
+
+    const vector<shared_ptr<Employee>>& getAllMembers() const {
+        return members;
+    }
+};
+
+// Класс Project
+class Project {
+private:
+    string projectName;
+    string description;
+    tm startDate;
+    tm endDate;
+    Team team;
+
+public:
+    Project(const string& name = "", const string& desc = "")
+        : projectName(name), description(desc) {
+        time_t now = time(nullptr);
+        startDate = *localtime(&now);
+        endDate = *localtime(&now);
+    }
+
+    void setStartDate(int year, int month, int day) {
+        startDate.tm_year = year - 1900;
+        startDate.tm_mon = month - 1;
+        startDate.tm_mday = day;
+        mktime(&startDate);
+    }
+
+    void setEndDate(int year, int month, int day) {
+        endDate.tm_year = year - 1900;
+        endDate.tm_mon = month - 1;
+        endDate.tm_mday = day;
+        mktime(&endDate);
+    }
+
+    void display() const {
+        cout << "\n=== Информация о проекте ===\n";
+        cout << "Название: " << projectName << "\n";
+        cout << "Описание: " << description << "\n";
+        
+        cout << "Дата начала: " 
+             << put_time(&startDate, "%d.%m.%Y") << "\n";
+        cout << "Дата окончания: " 
+             << put_time(&endDate, "%d.%m.%Y") << "\n";
+        
+        cout << "Состав команды:\n";
+        team.displayAllMembers();
+        cout << "============================\n";
+    }
+
+    void addTeamMember(shared_ptr<Employee> employee) {
+        team.addMember(employee);
+    }
+
+    bool removeTeamMember(int id) {
+        return team.removeMember(id);
+    }
+
+    void displayTeam() const {
+        team.displayAllMembers();
+    }
+
+    // Перегрузка оператора вывода
+    friend ostream& operator<<(ostream& os, const Project& project) {
+        os << project.projectName << "|" << project.description << "|"
+           << mktime(const_cast<tm*>(&project.startDate)) << "|"
+           << mktime(const_cast<tm*>(&project.endDate)) << "|"
+           << project.team;
+        return os;
+    }
+
+    // Перегрузка оператора ввода
+    friend istream& operator>>(istream& is, Project& project) {
+        string line;
+        if (getline(is, line)) {
+            stringstream ss(line);
+            getline(ss, project.projectName, '|');
+            getline(ss, project.description, '|');
+            
+            string startStr, endStr;
+            getline(ss, startStr, '|');
+            getline(ss, endStr, '|');
+            
+            time_t startTime = stol(startStr);
+            time_t endTime = stol(endStr);
+            project.startDate = *localtime(&startTime);
+            project.endDate = *localtime(&endTime);
+            
+            ss >> project.team;
+        }
+        return is;
+    }
+
+    string getProjectName() const { return projectName; }
+    void setProjectName(const string& name) { projectName = name; }
+    
+    string getDescription() const { return description; }
+    void setDescription(const string& desc) { description = desc; }
+    
+    Team& getTeam() { return team; }
+    const Team& getTeam() const { return team; }
+
+    double calculateTotalCost() const {
+        double totalCost = 0.0;
+        for (const auto& member : team.getAllMembers()) {
+            totalCost += member->getSalary();
+        }
+        return totalCost;
+    }
+
+    vector<shared_ptr<Employee>> findTeamMembersByPosition(const string& position) const {
+        return team.findByPosition(position);
+    }
+};
+
+// Глобальные контейнеры
+vector<shared_ptr<Employee>> allEmployees;
+vector<Team> allTeams;
+vector<Project> allProjects;
+
+// Вспомогательные функции
+int inputInt(const string& prompt) {
+    int value;
+    while (true) {
+        cout << prompt;
+        cin >> value;
+        if (cin.good()) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            break;
+        } else {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Ошибка ввода. Пожалуйста, введите целое число." << endl;
+        }
+    }
+    return value;
+}
+
+double inputDouble(const string& prompt) {
+    double value;
+    while (true) {
+        cout << prompt;
+        cin >> value;
+        if (cin.good()) {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            break;
+        } else {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Ошибка ввода. Пожалуйста, введите число." << endl;
+        }
+    }
+    return value;
+}
+
+// Функции для работы с файлами
+void saveToFile() {
+    ofstream file("hr_data.dat", ios::binary);
+    if (!file.is_open()) {
+        cout << "Ошибка открытия файла для записи." << endl;
+        return;
+    }
+    
+    // Сохраняем количество сотрудников
+    size_t empCount = allEmployees.size();
+    file.write(reinterpret_cast<const char*>(&empCount), sizeof(empCount));
+    
+    // Сохраняем сотрудников
+    for (const auto& emp : allEmployees) {
+        // Определяем тип сотрудника
+        char type = 'E'; // базовый тип
+        if (dynamic_cast<Developer*>(emp.get())) {
+            type = 'D';
+        } else if (dynamic_cast<Manager*>(emp.get())) {
+            type = 'M';
+        }
+        
+        file.write(&type, sizeof(type));
+        
+        // Сохраняем данные сотрудника
+        if (type == 'D') {
+            Developer* dev = dynamic_cast<Developer*>(emp.get());
+            file << *dev << "\n";
+        } else if (type == 'M') {
+            Manager* man = dynamic_cast<Manager*>(emp.get());
+            file << *man << "\n";
+        } else {
+            file << *emp << "\n";
+        }
+    }
+    
+    // Сохраняем количество команд
+    size_t teamCount = allTeams.size();
+    file.write(reinterpret_cast<const char*>(&teamCount), sizeof(teamCount));
+    
+    // Сохраняем команды
+    for (const auto& team : allTeams) {
+        file << team << "\n";
+    }
+    
+    // Сохраняем количество проектов
+    size_t projectCount = allProjects.size();
+    file.write(reinterpret_cast<const char*>(&projectCount), sizeof(projectCount));
+    
+    // Сохраняем проекты
+    for (const auto& project : allProjects) {
+        file << project << "\n";
+    }
+    
+    file.close();
+    cout << "Данные успешно сохранены в файл 'hr_data.dat'." << endl;
+}
+
+void loadFromFile() {
+    ifstream file("hr_data.dat", ios::binary);
+    if (!file.is_open()) {
+        cout << "Файл с данными не найден." << endl;
+        return;
+    }
+    
+    // Очищаем текущие данные
+    allEmployees.clear();
+    allTeams.clear();
+    allProjects.clear();
+    
+    // Загружаем количество сотрудников
+    size_t empCount = 0;
+    file.read(reinterpret_cast<char*>(&empCount), sizeof(empCount));
+    
+    // Загружаем сотрудников
+    for (size_t i = 0; i < empCount; i++) {
+        char type;
+        file.read(&type, sizeof(type));
+        
+        string line;
+        getline(file, line);
+        
+        if (type == 'D') {
+            auto dev = make_shared<Developer>();
+            stringstream ss(line);
+            ss >> *dev;
+            allEmployees.push_back(dev);
+        } else if (type == 'M') {
+            auto man = make_shared<Manager>();
+            stringstream ss(line);
+            ss >> *man;
+            allEmployees.push_back(man);
+        } else {
+            auto emp = make_shared<Employee>();
+            stringstream ss(line);
+            ss >> *emp;
+            allEmployees.push_back(emp);
+        }
+    }
+    
+    // Загружаем количество команд
+    size_t teamCount = 0;
+    file.read(reinterpret_cast<char*>(&teamCount), sizeof(teamCount));
+    
+    // Загружаем команды
+    for (size_t i = 0; i < teamCount; i++) {
+        string line;
+        getline(file, line);
+        
+        Team team;
+        stringstream ss(line);
+        ss >> team;
+        allTeams.push_back(team);
+    }
+    
+    // Загружаем количество проектов
+    size_t projectCount = 0;
+    file.read(reinterpret_cast<char*>(&projectCount), sizeof(projectCount));
+    
+    // Загружаем проекты
+    for (size_t i = 0; i < projectCount; i++) {
+        string line;
+        getline(file, line);
+        
+        Project project;
+        stringstream ss(line);
+        ss >> project;
+        allProjects.push_back(project);
+    }
+    
+    file.close();
+    cout << "Данные успешно загружены из файла 'hr_data.dat'." << endl;
+}
+
+void searchInFile() {
+    cout << "\n--- Поиск в файле ---" << endl;
+    cout << "1. Поиск сотрудников" << endl;
+    cout << "2. Поиск команд" << endl;
+    cout << "3. Поиск проектов" << endl;
+    
+    int choice = inputInt("Выберите тип поиска: ");
+    
+    string searchTerm;
+    cout << "Введите поисковый запрос: ";
+    cin.ignore();
+    getline(cin, searchTerm);
+    
+    ifstream file("hr_data.dat", ios::binary);
+    if (!file.is_open()) {
+        cout << "Файл с данными не найден." << endl;
+        return;
+    }
+    
+    // Пропускаем заголовок с количеством сотрудников
+    size_t empCount = 0;
+    file.read(reinterpret_cast<char*>(&empCount), sizeof(empCount));
+    
+    // Ищем в сотрудниках
+    if (choice == 1) {
+        for (size_t i = 0; i < empCount; i++) {
+            char type;
+            file.read(&type, sizeof(type));
+            
+            string line;
+            getline(file, line);
+            
+            if (line.find(searchTerm) != string::npos) {
+                cout << "Найдено: " << line << endl;
+            }
+        }
+    }
+    
+    // Пропускаем команды и проекты для других типов поиска
+    file.close();
+    cout << "Поиск завершен." << endl;
+}
+
+void editInFile() {
+    cout << "\n--- Редактирование в файле ---" << endl;
+    cout << "1. Редактировать сотрудника" << endl;
+    cout << "2. Редактировать команду" << endl;
+    cout << "3. Редактировать проект" << endl;
+    
+    int choice = inputInt("Выберите тип редактирования: ");
+    int id = inputInt("Введите ID для редактирования: ");
+    
+    // Для простоты реализуем загрузку, редактирование в памяти и сохранение
+    loadFromFile();
+    
+    bool found = false;
+    if (choice == 1) {
+        for (auto& emp : allEmployees) {
+            if (emp->getId() == id) {
+                emp->edit();
+                found = true;
+                break;
+            }
+        }
+    }
+    
+    if (found) {
+        saveToFile();
+        cout << "Данные успешно отредактированы и сохранены." << endl;
+    } else {
+        cout << "Объект с указанным ID не найден." << endl;
+    }
+}
+
+void deleteFromFile() {
+    cout << "\n--- Удаление из файла ---" << endl;
+    cout << "1. Удалить сотрудника" << endl;
+    cout << "2. Удалить команду" << endl;
+    cout << "3. Удалить проект" << endl;
+    
+    int choice = inputInt("Выберите тип удаления: ");
+    int id = inputInt("Введите ID для удаления: ");
+    
+    // Для простоты реализуем загрузку, удаление из памяти и сохранение
+    loadFromFile();
+    
+    bool found = false;
+    if (choice == 1) {
+        auto it = remove_if(allEmployees.begin(), allEmployees.end(),
+            [id](const shared_ptr<Employee>& emp) {
+                return emp->getId() == id;
+            });
+        
+        if (it != allEmployees.end()) {
+            allEmployees.erase(it, allEmployees.end());
+            found = true;
+        }
+    }
+    
+    if (found) {
+        saveToFile();
+        cout << "Данные успешно удалены." << endl;
+    } else {
+        cout << "Объект с указанным ID не найден." << endl;
+    }
+}
+
+// Функции для работы с сотрудниками (остаются без изменений)
+void addDeveloper() {
+    cout << "\n--- Добавление разработчика ---" << endl;
+    auto dev = make_shared<Developer>();
+    dev->input();
+    allEmployees.push_back(dev);
+    cout << "Разработчик успешно добавлен!" << endl;
+}
+
+void addManager() {
+    cout << "\n--- Добавление менеджера ---" << endl;
+    auto man = make_shared<Manager>();
+    man->input();
+    allEmployees.push_back(man);
+    cout << "Менеджер успешно добавлен!" << endl;
+}
+
+void editEmployee() {
+    if (allEmployees.empty()) {
+        cout << "Нет сотрудников для редактирования." << endl;
+        return;
+    }
+    
+    cout << "\n--- Редактирование сотрудника ---" << endl;
+    
+    for (size_t i = 0; i < allEmployees.size(); i++) {
+        cout << i + 1 << ". ";
+        allEmployees[i]->display();
+    }
+    
+    int empIndex = inputInt("Выберите номер сотрудника для редактирования: ") - 1;
+    if (empIndex < 0 || empIndex >= allEmployees.size()) {
+        cout << "Неверный выбор." << endl;
+        return;
+    }
+    
+    allEmployees[empIndex]->edit();
+    cout << "Сотрудник успешно отредактирован!" << endl;
+}
+
+void deleteEmployee() {
+    if (allEmployees.empty()) {
+        cout << "Нет сотрудников для удаления." << endl;
+        return;
+    }
+    
+    cout << "\n--- Удаление сотрудника ---" << endl;
+    
+    for (size_t i = 0; i < allEmployees.size(); i++) {
+        cout << i + 1 << ". ";
+        allEmployees[i]->display();
+    }
+    
+    int empIndex = inputInt("Выберите номер сотрудника для удаления: ") - 1;
+    if (empIndex < 0 || empIndex >= allEmployees.size()) {
+        cout << "Неверный выбор." << endl;
+        return;
+    }
+    
+    allEmployees.erase(allEmployees.begin() + empIndex);
+    cout << "Сотрудник успешно удален!" << endl;
+}
+
+void searchEmployee() {
+    if (allEmployees.empty()) {
+        cout << "Нет сотрудников для поиска." << endl;
+        return;
+    }
+    
+    cout << "\n--- Поиск сотрудника ---" << endl;
+    cout << "1. По имени" << endl;
+    cout << "2. По ID" << endl;
+    cout << "3. По должности" << endl;
+    
+    int choice = inputInt("Выберите критерий поиска: ");
+    
+    string searchTerm;
+    cout << "Введите значение для поиска: ";
+    cin.ignore();
+    getline(cin, searchTerm);
+    
+    vector<shared_ptr<Employee>> results;
+    
+    switch (choice) {
+        case 1:
+            for (const auto& emp : allEmployees) {
+                if (emp->getName().find(searchTerm) != string::npos) {
+                    results.push_back(emp);
+                }
+            }
+            break;
+        case 2:
+            for (const auto& emp : allEmployees) {
+                if (to_string(emp->getId()).find(searchTerm) != string::npos) {
+                    results.push_back(emp);
+                }
+            }
+            break;
+        case 3:
+            for (const auto& emp : allEmployees) {
+                if (emp->getPosition().find(searchTerm) != string::npos) {
+                    results.push_back(emp);
+                }
+            }
+            break;
+        default:
+            cout << "Неверный выбор." << endl;
+            return;
+    }
+    
+    if (results.empty()) {
+        cout << "Сотрудники не найдены." << endl;
+    } else {
+        cout << "\n--- Результаты поиска ---" << endl;
+        for (const auto& emp : results) {
+            emp->display();
+        }
+    }
+}
+
+// Главное меню с добавлением функций работы с файлами
+void displayMainMenu() {
+    cout << "\n=== HR-Менеджмент - Главное меню ===" << endl;
+    cout << "1. Управление сотрудниками" << endl;
+    cout << "2. Управление командами" << endl;
+    cout << "3. Управление проектами" << endl;
+    cout << "4. Показать всех сотрудников" << endl;
+    cout << "5. Показать все команды" << endl;
+    cout << "6. Показать все проекты" << endl;
+    cout << "7. Сохранить данные в файл" << endl;
+    cout << "8. Загрузить данные из файла" << endl;
+    cout << "9. Поиск в файле" << endl;
+    cout << "10. Редактирование в файле" << endl;
+    cout << "11. Удаление из файла" << endl;
+    cout << "0. Выход" << endl;
+    cout << "Выберите опцию: ";
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    
+    cout << "=== Система HR-Менеджмента ===" << endl;
+    cout << "Для управления IT-проектами" << endl;
+    
+    int choice;
+    do {
+        displayMainMenu();
+        choice = inputInt("");
+        
+        switch (choice) {
+            case 7:
+                saveToFile();
+                break;
+            case 8:
+                loadFromFile();
+                break;
+            case 9:
+                searchInFile();
+                break;
+            case 10:
+                editInFile();
+                break;
+            case 11:
+                deleteFromFile();
+                break;
+            case 0:
+                cout << "Выход из программы." << endl;
+                break;
+            default:
+                cout << "Неверный выбор. Попробуйте снова." << endl;
+        }
+    } while (choice != 0);
+    
+    return 0;
+}
